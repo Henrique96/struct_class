@@ -1,0 +1,147 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct Proprietario{
+    int numeroApt;
+    char nome[100];
+    struct Proprietario *prox;
+} Proprietario;
+
+typedef struct FilaEspera{
+    Proprietario *inicio;
+    Proprietario *fim;
+} FilaEspera;
+
+typedef struct ListaApartamentos {
+    Proprietario *cabeca;
+} ListaApartamentos;
+
+Proprietario lerProprietario() {
+    Proprietario p;
+    printf("Informe seu nome: ");
+    fgets(p.nome, 100, stdin);
+    printf("Informe o número do seu apartamento: ");
+    scanf("%d", &p.numeroApt);
+    getchar();
+    p.prox = NULL;
+    return p;
+}
+
+void imprimirProprietario(Proprietario p) {
+    printf("Nome: %s", p.nome);
+    printf("Número do apartamento: %d\n", p.numeroApt);
+}
+
+void inicializarFilaEspera(FilaEspera *fila) {
+    fila->inicio = NULL;
+    fila->fim = NULL;
+}
+
+void adicionarFilaEspera(FilaEspera *fila, Proprietario p) {
+    Proprietario *novo = (Proprietario*) malloc(sizeof(Proprietario));
+    *novo = p;
+    novo->prox = NULL;
+    if (fila->inicio == NULL) {
+        fila->inicio = novo;
+    } else {
+        fila->fim->prox = novo;
+    }
+    fila->fim = novo;
+}
+
+void imprimirFilaEspera(FilaEspera fila) {
+    Proprietario *atual = fila.inicio;
+    printf("Fila de espera:\n");
+    while (atual != NULL) {
+        imprimirProprietario(*atual);
+        atual = atual->prox;
+    }
+}
+
+void inicializarListaApartamentos(ListaApartamentos *lista) {
+    lista->cabeca = NULL;
+}
+
+void liberarVaga(ListaApartamentos *lista, int numeroApt, FilaEspera *fila) {
+    Proprietario *atual = lista->cabeca;
+    Proprietario *anterior = NULL;
+    while (atual != NULL && atual->numeroApt != numeroApt) {
+        anterior = atual;
+        atual = atual->prox;
+    }
+    if (atual == NULL) {
+        printf("Apartamento nao encontrado.\n");
+        return;
+    }
+    if (anterior == NULL) {
+        lista->cabeca = atual->prox;
+    } else {
+        anterior->prox = atual->prox;
+    }
+    printf("Vaga do apartamento %d liberada.\n", numeroApt);
+    free(atual);
+
+    if (fila->inicio != NULL) {
+        Proprietario *primeiroFila = fila->inicio;
+        if (anterior == NULL) {
+            lista->cabeca = primeiroFila;
+        } else {
+            anterior->prox = primeiroFila;
+        }
+        fila->inicio = primeiroFila->prox;
+        primeiroFila->prox = NULL;
+        printf("Apartamento %d entrou na vaga liberada.\n", primeiroFila->numeroApt);
+        fila->fim->prox = primeiroFila;
+        fila->fim = primeiroFila;
+    }
+}
+
+void menu() {
+    printf("\n=== Menu ===\n");
+    printf("1. Adicionar a fila de espera\n");
+    printf("2. Liberar vaga\n");
+    printf("3. Imprimir fila de espera\n");
+    printf("4. Sair\n");
+    printf("Escolha uma opção: ");
+}
+
+int main() {
+    ListaApartamentos lista;
+    FilaEspera fila;
+    inicializarListaApartamentos(&lista);
+    inicializarFilaEspera(&fila);
+    int opcao;
+
+    do {
+        menu();
+        scanf("%d", &opcao);
+        getchar(); // Para consumir o caractere de nova linha do buffer
+
+        switch (opcao) {
+            case 1: {
+                Proprietario novo = lerProprietario();
+                adicionarFilaEspera(&fila, novo);
+                printf("Proprietário adicionado a fila de espera.\n");
+                break;
+            }
+            case 2: {
+                int numeroApt;
+                printf("Informe o numero do apartamento a ser liberado: ");
+                scanf("%d", &numeroApt);
+                liberarVaga(&lista, numeroApt, &fila);
+                break;
+            }
+            case 3:
+                imprimirFilaEspera(fila);
+                break;
+            case 4:
+                printf("Saindo...\n");
+                break;
+            default:
+                printf("Opção inválida.\n");
+        }
+    } while (opcao != 4);
+
+    return 0;
+}
